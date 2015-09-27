@@ -1,0 +1,107 @@
+---
+title: "A Model to Tell How Well You Do Weight Lifting"
+author: "LYU Daliang"
+date: "September 27, 2015"
+output: html_document
+---
+
+# Background
+
+Using devices such as _Jawbone Up_, _Nike FuelBand_, and _Fitbit_ it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement – a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. 
+
+One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this report, I will use data from accelerometers on the _belt_, _forearm_, _arm_, and _dumbell_ of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. Based on the data, I will build a model to predict the manner in which they did the exercise. 
+
+The data come from this source: <http://groupware.les.inf.puc-rio.br/har>.
+
+# Build the model
+
+```{r, cache=TRUE, echo=FALSE, warning=FALSE}
+library(caret)
+library(rpart)
+library(RANN)
+# read the data
+training <- read.csv('pml-training.csv', stringsAsFactors = FALSE)
+# extract columns 8 to 160, discard firt 7 columns
+training <- training[, 8:160]
+# this function coerces `chr`, `int` and `logi` to `num`
+chr2num <- function(x) {  # x - data frame
+    for (colnum in 1:152) {
+        if (class(x[, colnum]) == 'character' | 
+            class(x[, colnum]) == 'integer' | 
+            class(x[, colnum]) == 'logical') {
+            x[, colnum] <- as.numeric(x[, colnum])
+        }
+    }
+    x  # return value
+}
+chr2num(training) -> training
+# get rid of near zero variables from training data set
+nearZeroVar(training) -> discard
+training[, -discard] -> training
+# change `calsse` to a factor
+training$classe <- factor(training$classe)
+# make subtraining and subtesting for examing out of sample error 
+insubtraining <- createDataPartition(training$classe, p = .7, list = FALSE)
+subtraining <- training[insubtraining, ]
+subtesting <- training[-insubtraining, ]
+
+# impute missing values
+pre_proc <- preProcess(subtraining[, -118], method = 'knnImpute')
+# IF PREPROCESS TRAINING DATA, THE MODEL FITTING SEEMS NEVER ENDING, SO PUT 
+# preProcess = 'knnImpute' IN FITTING FUNCTION INSTEAD. NO IDEA IF THEY
+# ARE THE SAME
+# subtraining <- cbind(predict(pre_proc, subtraining[, -118]), classe = subtraining$classe)
+subtesting <- cbind(predict(pre_proc, subtesting[, -118]), classe = subtesting$classe)
+```
+
+After loading and cleaning the data, I first try to fit a model with `rpart`.
+
+```{r, cache=TRUE}
+mod_rp <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute', method = 'rpart')
+mod_rp$results
+```
+
+Unfortunatly, it performs poorly. So I turn to `rf`.
+
+```{r, cache=TRUE, message=FALSE}
+mod_rf <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute', method = 'rf')
+mod_rf$results
+```
+
+It is much better, but not ideal. I decide to adjust the cross validation. After some testing, `boot632` does the best.
+
+```{r, message=FALSE, cache=TRUE}
+mod_rf_boot632 <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute', method = 'rf', trControl = trainControl(method = 'boot632'))
+mod_rf_boot632$results
+```
+
+# Examping the out of sample error
+
+```{r}
+confusionMatrix(predict(mod_rf_boot632, subtesting), subtesting$classe)
+```
+
+# Apply the algorithm to 20 test cases 
+
+```{r, echo=FALSE}
+testing <- read.csv('pml-testing.csv', stringsAsFactors = FALSE)
+testing <- testing[, 8:160]
+chr2num(testing) -> testing
+testing[, -discard] -> testing
+# CAN NOT PREPROCESS DATA LIKE TRAINING AND TESTING DATA, SOME COLUMNS ARE ALL # `NA`, I PLUG IN `0` INSTEAD, MAYBE IT IS THE REASON OF POOR PERFORMANCE
+for (i in 1:20) {
+    testing[i, ][is.na(testing[i, ])] <- 0
+}
+result <- predict(mod_rf_boot632, newdata = testing)
+result
+
+# write files for submission
+pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0("problem_id_",i,".txt")
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+pml_write_files(as.vector(result))
+```
