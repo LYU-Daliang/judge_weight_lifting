@@ -50,14 +50,6 @@ training <- training[, !incomplete]
 insubtraining <- createDataPartition(training$classe, p = .75, list = FALSE)
 subtraining <- training[insubtraining, ]
 subtesting <- training[-insubtraining, ]
-
-## impute missing values
-# pre_proc <- preProcess(subtraining[, -118], method = 'knnImpute')
-## IF PREPROCESS TRAINING DATA, THE MODEL FITTING SEEMS NEVER ENDING, SO PUT 
-## preProcess = 'knnImpute' IN FITTING FUNCTION INSTEAD. NO IDEA IF THEY
-## ARE THE SAME
-# subtraining <- cbind(predict(pre_proc, subtraining[, -118]), classe = subtraining$classe)
-# subtesting <- cbind(predict(pre_proc, subtesting[, -118]), classe = subtesting$classe)
 ```
 
 After loading and cleaning the data, I first try to fit a model with `rpart`.
@@ -72,8 +64,10 @@ mod_rp$results
 if (file.exists('mod_rp.RData')) {
     load('mod_rp.RData')
 } else {
+    # system.time({
     mod_rp <- train(classe ~ ., data = subtraining, method = 'rpart', 
                     preProcess = c('center', 'scale'))
+    # })
 }
 mod_rp$results
 ```
@@ -99,14 +93,25 @@ if (file.exists('mod_rf.RData')) {
  mod_rf$results
 ```
 
-It is ideal. 
+It is ideal. For comparing purpose, let us try `gmb`.
 
-```{r, eval=FALSE}
-# for comparing purpose, let us try `gmb`
+```{r, eval=FALSE, echo=TRUE}
 mod_gbm <- train(classe ~ ., data = subtraining, method = 'gbm',
                  preProcess = c('center', 'scale'))
-mod_gbm$results
+mod_gbm$results[, -(1:3)]
 ```
+
+```{r}
+if (file.exists('mod_gbm.RData')) {
+    load('mod_gbm.RData')
+} else {
+    mod_gbm <- train(classe ~ ., data = subtraining, method = 'gbm',
+                     preProcess = c('center', 'scale'))
+}
+mod_gbm$results[, -(1:3)]
+```
+
+`gbm` model is better than `rpart`, but not as good as `rf`.
 
 # Examining the out of sample error
 
@@ -114,7 +119,7 @@ mod_gbm$results
 confusionMatrix(predict(mod_rf, subtesting), subtesting$classe) -> cm
 ```
 
-The error rate is `r round(1 - cm$overall['Accuracy'], 2)`, quite small.
+The error rate is `r round(1 - cm$overall['Accuracy'], 4)`, quite small.
 
 ```{r}
 cm$table
@@ -129,6 +134,8 @@ testing <- testing[, 8:160]
 chr2num(testing) -> testing
 testing <- testing[, names(testing) %in% names(subtraining)]
 result <- predict(mod_rf, newdata = testing)
+# mod_gbm gives identical prediction
+# result <- predict(mod_gbm, newdata = testing)
 result
 
 # write files for submission
