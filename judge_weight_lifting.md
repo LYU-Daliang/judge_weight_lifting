@@ -29,7 +29,7 @@ mod_rp$results
 ## 3 0.2136752 0.2971696 0.1054304 0.09169021 0.10211150
 ```
 
-Unfortunatly, it performs poorly. So I turn to `rf`.
+Unfortunately, it performs poorly. So I turn to `rf`.
 
 
 ```r
@@ -63,7 +63,7 @@ mod_rf_boot632$results
 ## 3             1
 ```
 
-# Examping the out of sample error
+# Examining the out of sample error
 
 
 ```r
@@ -75,33 +75,33 @@ confusionMatrix(predict(mod_rf_boot632, subtesting), subtesting$classe)
 ## 
 ##           Reference
 ## Prediction    A    B    C    D    E
-##          A 1662 1133 1019  949  996
-##          B    0    0    0    0    0
-##          C    4    3    7    2    1
-##          D    0    0    0   10    7
-##          E    8    3    0    3   78
+##          A 1648 1134 1019  935  968
+##          B    0    1    1    0    0
+##          C    2    0    4    2    4
+##          D   14    2    2   16   16
+##          E   10    2    0   11   94
 ## 
 ## Overall Statistics
 ##                                           
-##                Accuracy : 0.2986          
-##                  95% CI : (0.2869, 0.3104)
+##                Accuracy : 0.2996          
+##                  95% CI : (0.2879, 0.3115)
 ##     No Information Rate : 0.2845          
-##     P-Value [Acc > NIR] : 0.008791        
+##     P-Value [Acc > NIR] : 0.005449        
 ##                                           
-##                   Kappa : 0.0228          
-##  Mcnemar's Test P-Value : NA              
+##                   Kappa : 0.0256          
+##  Mcnemar's Test P-Value : < 2.2e-16       
 ## 
 ## Statistics by Class:
 ## 
-##                      Class: A Class: B Class: C Class: D Class: E
-## Sensitivity           0.99283   0.0000 0.006823 0.010373  0.07209
-## Specificity           0.02707   1.0000 0.997942 0.998578  0.99709
-## Pos Pred Value        0.28859      NaN 0.411765 0.588235  0.84783
-## Neg Pred Value        0.90476   0.8065 0.826346 0.837423  0.82669
-## Prevalence            0.28445   0.1935 0.174342 0.163806  0.18386
-## Detection Rate        0.28241   0.0000 0.001189 0.001699  0.01325
-## Detection Prevalence  0.97859   0.0000 0.002889 0.002889  0.01563
-## Balanced Accuracy     0.50995   0.5000 0.502382 0.504475  0.53459
+##                      Class: A  Class: B  Class: C Class: D Class: E
+## Sensitivity           0.98447 0.0008780 0.0038986 0.016598  0.08688
+## Specificity           0.03681 0.9997893 0.9983536 0.993091  0.99521
+## Pos Pred Value        0.28892 0.5000000 0.3333333 0.320000  0.80342
+## Neg Pred Value        0.85635 0.8065613 0.8259833 0.837532  0.82871
+## Prevalence            0.28445 0.1935429 0.1743415 0.163806  0.18386
+## Detection Rate        0.28003 0.0001699 0.0006797 0.002719  0.01597
+## Detection Prevalence  0.96924 0.0003398 0.0020391 0.008496  0.01988
+## Balanced Accuracy     0.51064 0.5003336 0.5011261 0.504844  0.54104
 ```
 
 # Apply the algorithm to 20 test cases 
