@@ -21,6 +21,7 @@ The data come from this source: <http://groupware.les.inf.puc-rio.br/har>.
 library(caret)
 library(rpart)
 library(RANN)
+set.seed(1530)
 # read the data
 training <- read.csv('pml-training.csv', stringsAsFactors = FALSE)
 # extract columns 8 to 160, discard firt 7 columns
@@ -63,7 +64,7 @@ mod_rp <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute', method
 mod_rp$results
 ```
 
-Unfortunatly, it performs poorly. So I turn to `rf`.
+Unfortunately, it performs poorly. So I turn to `rf`.
 
 ```{r, cache=TRUE, message=FALSE}
 mod_rf <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute', method = 'rf')
@@ -77,7 +78,7 @@ mod_rf_boot632 <- train(classe ~ ., data = subtraining, preProcess = 'knnImpute'
 mod_rf_boot632$results
 ```
 
-# Examping the out of sample error
+# Examining the out of sample error
 
 ```{r}
 confusionMatrix(predict(mod_rf_boot632, subtesting), subtesting$classe)
